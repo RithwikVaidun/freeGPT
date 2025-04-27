@@ -115,6 +115,94 @@ function areTablesEqual(t1, t2)
 	return true
 end
 
+function findButtonByHelp(el, helpText)
+	if not el then
+		return nil
+	end
+
+	local ok, role = pcall(function()
+		return el:attributeValue("AXRole")
+	end)
+	if ok and role == "AXButton" then
+		local ok, help = pcall(function()
+			return el:attributeValue("AXHelp")
+		end)
+		if ok and help == helpText then
+			return el
+		end
+	end
+
+	local children = {}
+	local ok, kids = pcall(function()
+		return el:attributeValue("AXChildren")
+	end)
+	if ok and kids then
+		children = kids
+	end
+
+	for _, child in ipairs(children) do
+		local f = findButtonByHelp(child, helpText)
+		if f then
+			return f
+		end
+	end
+
+	return nil
+end
+
+function selectModel(modelKey)
+	-- Check if the requested model exists in our map
+	local frameData = modelMap[modelKey]
+	if not frameData then
+		hs.alert.show("Unknown model: " .. modelKey)
+		return
+	end
+
+	local app = hs.application.find("ChatGPT")
+	if not app then
+		hs.alert.show("ChatGPT not running")
+		return
+	end
+
+	-- Focus the app
+	hs.application.launchOrFocus("ChatGPT")
+
+	-- Wait a bit for the app to be in focus
+	hs.timer.doAfter(0.5, function()
+		local mainRoot = hs.axuielement.applicationElement(app)
+
+		-- Find and click the model picker button
+		local picker = findButtonByHelp(mainRoot, "Pick a model or GPT")
+		if not picker then
+			hs.alert.show("Couldn't find the model picker")
+			return
+		end
+
+		picker:performAction("AXPress")
+
+		-- Wait for the popup to appear, then click at the coordinates for the requested model
+		hs.timer.doAfter(1.0, function()
+			-- Calculate the center of the button
+			local centerX = frameData.x + (frameData.w / 2)
+			local centerY = frameData.y + (frameData.h / 2)
+
+			-- Move mouse to position and click
+			hs.mouse.absolutePosition({ x = centerX, y = centerY })
+			hs.timer.doAfter(0.3, function()
+				hs.eventtap.leftClick({ x = centerX, y = centerY })
+				hs.alert.show("Selected model: " .. modelKey)
+			end)
+		end)
+	end)
+end
+
+modelMap = {
+	["4o"] = { x = 506, y = 681, w = 300, h = 51 },
+	["o3"] = { x = 506, y = 737, w = 300, h = 51 },
+	["o4"] = { x = 506, y = 793, w = 300, h = 51 },
+	["o4 mini high"] = { x = 506, y = 849, w = 300, h = 51 },
+}
+
 -- local prompt = "what does it take to get an internship at google?"
 -- local prompt = "tell me an interesting fact in one sentence"
 -- askGPTSmart(prompt)
