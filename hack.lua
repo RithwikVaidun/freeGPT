@@ -1,13 +1,12 @@
 function askGPTSmart(prompt)
 	hs.application.launchOrFocus("ChatGPT")
 	hs.timer.doAfter(1.5, function()
-		hs.eventtap.leftClick({ x = 600, y = 1000 }) -- Click input box
+		hs.eventtap.leftClick({ x = 600, y = 1000 })
 		hs.timer.usleep(300000)
 		hs.eventtap.keyStrokes(prompt)
 		hs.timer.usleep(300000)
 		hs.eventtap.keyStroke({}, "return")
 
-		-- Now, monitor for the response to appear
 		watchForResponse("ChatGPT")
 	end)
 end
@@ -24,7 +23,7 @@ function watchForResponse(appName)
 
 	local lastStableDescriptions = baselineDescriptions
 	local lastChangeTime = hs.timer.secondsSinceEpoch()
-	local stableWaitTime = 3 -- seconds to wait after last change
+	local stableWaitTime = 3
 
 	local filepath = os.getenv("HOME") .. "/rithwik/projects/auto_gpt/text.md"
 
@@ -40,12 +39,8 @@ function watchForResponse(appName)
 			-- print("Change detected, updating lastChangeTime...")
 		end
 
-		-- If enough time has passed with no new changes, consider it stable
 		local timeSinceLastChange = hs.timer.secondsSinceEpoch() - lastChangeTime
 		if timeSinceLastChange >= stableWaitTime then
-			-- print("No new changes for " .. stableWaitTime .. " seconds. Capturing response...")
-
-			-- Now compare baselineDescriptions vs lastStableDescriptions
 			local newContent = getNewDescriptions(baselineDescriptions, lastStableDescriptions)
 
 			local file, err = io.open(filepath, "w")
@@ -151,7 +146,6 @@ function findButtonByHelp(el, helpText)
 end
 
 function selectModel(modelKey)
-	-- Check if the requested model exists in our map
 	local frameData = modelMap[modelKey]
 	if not frameData then
 		hs.alert.show("Unknown model: " .. modelKey)
@@ -164,14 +158,11 @@ function selectModel(modelKey)
 		return
 	end
 
-	-- Focus the app
 	hs.application.launchOrFocus("ChatGPT")
 
-	-- Wait a bit for the app to be in focus
 	hs.timer.doAfter(0.5, function()
 		local mainRoot = hs.axuielement.applicationElement(app)
 
-		-- Find and click the model picker button
 		local picker = findButtonByHelp(mainRoot, "Pick a model or GPT")
 		if not picker then
 			hs.alert.show("Couldn't find the model picker")
@@ -180,13 +171,11 @@ function selectModel(modelKey)
 
 		picker:performAction("AXPress")
 
-		-- Wait for the popup to appear, then click at the coordinates for the requested model
 		hs.timer.doAfter(1.0, function()
 			-- Calculate the center of the button
 			local centerX = frameData.x + (frameData.w / 2)
 			local centerY = frameData.y + (frameData.h / 2)
 
-			-- Move mouse to position and click
 			hs.mouse.absolutePosition({ x = centerX, y = centerY })
 			hs.timer.doAfter(0.3, function()
 				hs.eventtap.leftClick({ x = centerX, y = centerY })
