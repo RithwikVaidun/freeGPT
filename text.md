@@ -1,1 +1,1 @@
-Tardigrades—microscopic “water bears”—can survive complete dehydration by curling into a dry, glass-like state called a tun. In this form they’ve endured the vacuum of outer space, lethal radiation, and temperatures from near absolute zero to above boiling water.
+If you shuffle a standard deck of 52 cards, there are 52! (about 8×10^67) possible orders—so your exact shuffle has almost certainly never occurred before in the entire history of the universe.

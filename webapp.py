@@ -26,45 +26,41 @@ app.add_middleware(
 
 @app.post("/test")
 async def test(request: Request):
-    data = await request.json()
-    user_input = data.get("message", "")
-    print(f"Received input: {user_input}")
-    return {"message": f"i hate u frontend: {user_input}"}
+    print("test")
+    return {"message": f"i hate frontend"}
 
 
 @app.post("/trigger")
 async def trigger(request: Request):
     data = await request.json()
     user_input = data.get("message", "")
+    model = data.get("model", "")
 
     # lua_file_path = "/Users/rithwik/rithwik/projects/auto_gpt/test.lua"
     # hs_command = (
     #     f'dofile("{lua_file_path}"); local text = {json.dumps(user_input)}; test(text)'
     # )
-    model = data.get("model", "")
 
     lua_file_path = "/Users/rithwik/rithwik/projects/auto_gpt/hack.lua"
 
-    # hs_command = f'dofile("{lua_file_path}"); local text = {json.dumps(user_input)};local model = {json.dumps(model)}; selectModel(model) askGPTSmart(text)'
     hs_command = f"""
     dofile("{lua_file_path}")
     local text = {json.dumps(user_input)}
     local model = {json.dumps(model)}
     selectModel(model)
-    hs.timer.usleep(500000)  -- wait 0.5 seconds
+    hs.timer.usleep(500000) 
     askGPTSmart(text)
     """
 
     output_file = "/Users/rithwik/rithwik/projects/auto_gpt/text.md"
 
-    # Step 1: Record initial last modified time
     try:
         before_mod_time = os.path.getmtime(output_file)
     except FileNotFoundError:
         before_mod_time = 0  # File doesn't exist yet
 
     try:
-        # Step 2: Run the hs -c Lua process
+
         print("Starting Hammerspoon subprocess")
         result = subprocess.run(
             ["hs", "-c", hs_command],
@@ -78,19 +74,18 @@ async def trigger(request: Request):
         if result.returncode != 0:
             return {"error": "Hammerspoon error", "details": result.stderr}
 
-        # Step 3: Wait until the output file is updated
-        timeout = 20  # seconds
-        polling_interval = 0.5  # seconds
+        timeout = 20
+        polling_interval = 0.5
         start_time = time.time()
 
         while True:
             try:
                 current_mod_time = os.path.getmtime(output_file)
                 if current_mod_time > before_mod_time:
-                    # File was updated!
+
                     break
             except FileNotFoundError:
-                # File not created yet
+
                 pass
 
             if time.time() - start_time > timeout:
@@ -98,7 +93,6 @@ async def trigger(request: Request):
 
             time.sleep(polling_interval)
 
-        # Step 4: Read the updated file and return its content
         with open(output_file, "r") as f:
             content = f.read()
 
@@ -126,7 +120,6 @@ async def change(request: Request):
 
     try:
         # Step 2: Run the hs -c Lua process
-        print("Starting Hammerspoon subprocess")
         result = subprocess.run(
             ["hs", "-c", hs_command],
             stdout=subprocess.PIPE,
@@ -140,32 +133,6 @@ async def change(request: Request):
             return {"error": "Hammerspoon error", "details": result.stderr}
 
         return {"message": "success"}
-
-        # Step 3: Wait until the output file is updated
-        timeout = 20  # seconds
-        polling_interval = 0.5  # seconds
-        start_time = time.time()
-
-        while True:
-            try:
-                current_mod_time = os.path.getmtime(output_file)
-                if current_mod_time > before_mod_time:
-                    # File was updated!
-                    break
-            except FileNotFoundError:
-                # File not created yet
-                pass
-
-            if time.time() - start_time > timeout:
-                raise TimeoutError("Timeout waiting for file update.")
-
-            time.sleep(polling_interval)
-
-        # Step 4: Read the updated file and return its content
-        with open(output_file, "r") as f:
-            content = f.read()
-
-        return {"message": content.strip()}
 
     except Exception as e:
         return {"error": str(e)}

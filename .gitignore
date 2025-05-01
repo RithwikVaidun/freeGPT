@@ -4,3 +4,6 @@ test.lua
 __pycache__/
 view_mouse.lua
 frontend/
+.gitignore
+try.lua
+.DS_Store
